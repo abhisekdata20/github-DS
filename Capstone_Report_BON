@@ -1,0 +1,485 @@
+## Capstone Project — The Battle of Neighbourhoods
+Introduction
+New Delhi is the capital city of India. The city itself has a population of 257,803. 
+From different parts of India many people goes to Delhi for different purposes like construction work, IT Job, Business, Travel with family,Students etc.. First thing which people encounter in which area they will stay. Now staying in an area depends on different aspects too like availability for food,most importantly if you are foodie, budget and bviously other amenities. So, we need to build this code to check which area is best for different category of people.For example, most north indian persons like chinese food so they can easily get the exact recommendation according to their need.
+
+With it’s diverse culture , comes diverse food items,ethnicity. There are many restaurants in New Delhi City, each belonging to different categories like Chinese , Italian , French etc. So as part of this project , we will list and visualise all major parts of New Delhi City .
+
+# Questions that can be asked using the above mentioned datasets
+What is best location for Chinese food ?
+Which area is having large number of north indian foods ?
+Which area is not having sufficient restaurants ?
+Best place to stay as per chinese cuisine selection ?
+In New delhi what are the best restaurants?
+
+# For this project we need the following data :
+
+New Delhi Resturants data that contains list Locality, Resturant name,Rating along with their latitude and longitude.
+Data source : https://www.kaggle.com/shrutimehta/zomato-restaurants-data
+Description : This data set contains the required information. And we will use this data set to explore various locality of new delhi city.
+Nearby places in each locality of new delhi city.
+Data source : https://developer.foursquare.com/
+Description : By using this api we will get all the venues in each neighborhood.
+
+# Approach
+Collect the new delhi city data from Zomato kaggel dataset
+Using FourSquare API we will find all venues for each neighborhood.
+Filter out all venues that are nearby by locality.
+Using aggregative rating for each resturant to find the best places.
+Visualize the Ranking of neighborhoods using folium library(python)
+
+import pandas as pd
+import numpy as np
+import requests # library to handle requests
+from pandas.io.json import json_normalize # tranform JSON file into a pandas dataframe
+# Matplotlib and associated plotting modules
+import matplotlib.cm as cm
+import matplotlib.colors as colors
+# import k-means from clustering stage
+from sklearn.cluster import KMeans
+
+!conda install -c conda-forge folium=0.5.0 --yes # uncomment this line if you haven't completed the Foursquare API lab
+import folium # map rendering library
+! pip install geocoder
+import geocoder
+
+
+
+Reading Restaurant data from CSV file
+
+df = pd.read_csv('https://raw.githubusercontent.com/haanjiankur/Capstone-Project---The-Battle-of-Neighborhoods/master/zomato.csv',encoding='ISO-8859-1')
+df.head()
+
+df_india = df[df['Country Code'] == 1]
+df_NDLS = df_india[df_india['City'] == 'New Delhi']
+df_NDLS.reset_index(drop=True, inplace=True)
+df_NDLS.head()
+
+
+
+Need to clean unwanted data
+
+df_Res= df_NDLS[df_NDLS.Longitude !=0.000000][['Restaurant Name','Locality','Longitude','Latitude','Cuisines','Aggregate rating','Rating text','Votes']]
+
+df_Res = df_Res[df_Res['Aggregate rating'] !=0.0]
+
+df_Res.head()
+
+
+
+Restaurant cluster visibility through Map view
+
+New_Delhi_Rest = folium.Map(location=[28.52, 77.25], zoom_start=12)
+
+X = df_Res['Latitude']
+Y = df_Res['Longitude']
+Z = np.stack((X, Y), axis=1)
+
+kmeans = KMeans(n_clusters=5, random_state=0).fit(Z)
+
+clusters = kmeans.labels_
+colors = ['red', 'green', 'blue', 'yellow','orange']
+df_Res ['Cluster'] = clusters
+
+for latitude, longitude, Locality, cluster in zip(df_Res['Latitude'], df_Res['Longitude'], df_Res['Locality'], df_Res['Cluster']):
+    label = folium.Popup(Locality, parse_html=True)
+    folium.CircleMarker(
+        [latitude, longitude],
+        radius=5,
+        popup=label,
+        color='black',
+        fill=True,
+        fill_color=colors[cluster],
+        fill_opacity=0.7).add_to(New_Delhi_Rest)  
+
+New_Delhi_Rest
+
+df_Res.head()
+
+
+
+Explore places having best restaurant in new delhi-Sorting as per Rating
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(9,5), dpi = 100)
+# title
+plt.title('The highest rated resturant in top 10 locality of New Delhi')
+#On x-axis
+
+#giving a bar plot
+df_Res.groupby('Locality')['Aggregate rating'].mean().nlargest(10).plot(kind='bar')
+
+plt.xlabel('Resturant Locality in New Delhi')
+#On y-axis
+plt.ylabel('Aggregate Rating')
+#displays the plot
+plt.show()
+
+
+
+The best restarants are available in Kesbah, Greater Kailash area.
+
+
+
+Now need to find places having worst restaurants
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(9,5), dpi = 100)
+# title
+plt.title('The Worst rated resturant in top 10 locality of New Delhi')
+#On x-axis
+
+#giving a bar plot
+
+df_Res.groupby('Locality')['Aggregate rating'].mean().nsmallest(10).plot(kind='bar')
+
+plt.xlabel('Resturant Locality in New Delhi')
+#On y-axis
+plt.ylabel('Aggregate Rating')
+
+#displays the plot
+plt.show()
+
+
+
+Now explore places for Foodies
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(9,5), dpi = 100)
+# title
+plt.title('The highest number of Restaurant available in Locality of New Delhi')
+#On x-axis
+
+#giving a bar plot
+df_Res.groupby('Locality')['Restaurant Name'].count().nlargest(10).plot(kind='bar')
+
+plt.xlabel('Resturant Locality in New Delhi')
+#On y-axis
+plt.ylabel('Number of Restaurant')
+
+#displays the plot
+plt.show()
+
+
+
+
+
+Connaught Place is the best places for edible person to stay there.
+
+
+
+Now opposite! Places not suitable for foodies.
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(9,5), dpi = 100)
+# title
+plt.title('The lowest number of Restaurant available in Locality of New Delhi')
+#On x-axis
+
+#giving a bar plot
+df_Res.groupby('Locality')['Restaurant Name'].count().nsmallest(10).plot(kind='bar')
+
+plt.xlabel('Resturant Locality in New Delhi')
+#On y-axis
+plt.ylabel('Number of Restaurant')
+
+#displays the plot
+plt.show()
+
+
+
+Want to have chinese! Let's explore the best area for that.
+
+
+
+Want to have chinese! Let's explore best places for them...
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(9,5), dpi = 100)
+# title
+plt.title('The best Locality for chinese restaurant in New Delhi city')
+#On x-axis
+
+#giving a bar plot
+df_Res[df_Res['Cuisines'].str.startswith('Chinese')].groupby('Locality')['Restaurant Name'].count().nlargest(5).plot(kind='bar')
+
+plt.xlabel('Resturant Locality in New Delhi')
+#On y-axis
+plt.ylabel('Number of Chinese Restaurant')
+
+#displays the plot
+plt.show()
+
+
+
+Chanakyapuri is the best place for Chinese restaurant.
+
+
+
+Now need to find best chinese restaurants
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(9,5), dpi = 100)
+# title
+plt.title('The best places for Chinese restaurant in New Delhi city')
+#On x-axis
+
+#giving a bar plot
+df_Res[df_Res['Cuisines'].str.startswith('Chinese')].groupby('Locality')['Aggregate rating'].mean().nlargest(5).plot(kind='bar')
+
+plt.xlabel('Resturant Locality in New Delhi')
+#On y-axis
+plt.ylabel('Rating of resturants')
+
+#displays the plot
+plt.show()
+
+
+
+Panchsheel park is best Chinese resturants.
+
+
+
+Based on locality let's group the data
+
+df_Res_Loc =  df_Res.groupby('Locality').count()['Restaurant Name'].to_frame()
+df_Res_rating= df_Res.groupby('Locality')['Aggregate rating'].mean().to_frame()
+d_Cuisines = df_Res.groupby(['Locality'])['Cuisines'].agg(', '.join).reset_index()
+d_R = df_Res.groupby(['Locality'])['Rating text'].unique().agg(', '.join).reset_index()
+d_V = df_Res.groupby(['Locality'])['Votes'].sum().to_frame()
+d_Lat = df_Res.groupby('Locality').mean()['Latitude'].to_frame()
+d_Lng = df_Res.groupby('Locality').mean()['Longitude'].to_frame()
+df_final = pd.merge(d_Lat,d_Lng,on='Locality').merge(df_Res_Loc, on='Locality').merge(d_Cuisines, on='Locality').merge(df_Res_rating,on ='Locality').merge(d_R, on ='Locality').merge(d_V, on ='Locality')
+
+df_final = df_final[df_final['Aggregate rating'] != 0.000000]
+df_final.columns =['Locality','Lat','Lng', 'No_of_Restaurant','Cusines', 'Agg_Rating','Comments' ,'No_of_Votes']
+df_final.head()
+
+df_final.shape
+
+
+
+Define Foursquare Credentials and Version
+
+## Define Foursquare Credentials and Version
+CLIENT_ID = 'ES3ZXR1ALGY0Q0YQVMG0RUMAO00WTUNG4K1C2JN5C2J0O1AZ' # Foursquare ID
+CLIENT_SECRET = 'H3VNVPRCUTEX4NP23B4ANBLXWZKKIZ0VM4NKN0IQRYPYXPTW' # Foursquare Secret
+VERSION = '20180605' # Foursquare API version
+
+print('Your credentails:')
+print('CLIENT_ID: ' + CLIENT_ID)
+print('CLIENT_SECRET:' + CLIENT_SECRET)
+
+
+
+create a function to repeat the same process to all the Locality in New Delhi
+
+## create a function to repeat the same process to all the Locality in New Delhi
+
+def getNearbyVenues(names, latitudes, longitudes, radius=500,LIMIT = 100):
+    
+    venues_list=[]
+    for name, lat, lng in zip(names, latitudes, longitudes):
+        print(name)
+            
+        # create the API request URL
+        url = 'https://api.foursquare.com/v2/venues/explore?&client_id={}&client_secret={}&v={}&ll={},{}&radius={}&limit={}'.format(
+            CLIENT_ID, 
+            CLIENT_SECRET, 
+            VERSION, 
+            lat, 
+            lng, 
+            radius, 
+            LIMIT)
+            
+        # make the GET request
+        results = requests.get(url).json()["response"]['groups'][0]['items']
+        
+        # return only relevant information for each nearby venue
+        venues_list.append([(
+            name, 
+            lat, 
+            lng, 
+            v['venue']['name'], 
+            v['venue']['location']['lat'], 
+            v['venue']['location']['lng'],  
+            v['venue']['categories'][0]['name']) for v in results])
+
+    nearby_venues = pd.DataFrame([item for venue_list in venues_list for item in venue_list])
+    nearby_venues.columns = ['Locality', 
+                  'Locality Latitude', 
+                  'Locality Longitude', 
+                  'Venue', 
+                  'Venue Latitude', 
+                  'Venue Longitude', 
+                  'Venue Category']
+    
+    return(nearby_venues)
+
+
+
+find the venues in all New Delhi Locality
+
+# find the venues in all New Delhi Locality
+new_Delhi_venues = getNearbyVenues(names=df_final['Locality'],
+                                   latitudes=df_final['Lat'],
+                                   longitudes=df_final['Lng']
+                                  )
+
+new_Delhi_venues.head()
+
+new_Delhi_venues.groupby('Locality').count()
+
+print('There are {} uniques categories.'.format(len(new_Delhi_venues['Venue Category'].unique())))
+
+## Analyze Each Locality
+
+# one hot encoding
+new_Delhi_onehot = pd.get_dummies(new_Delhi_venues[['Venue Category']], prefix="", prefix_sep="")
+
+# add Locality column back to dataframe
+new_Delhi_onehot['Locality'] = new_Delhi_venues['Locality'] 
+
+# move Locality column to the first column
+column_list = new_Delhi_onehot.columns.tolist()
+column_number = int(column_list.index('Locality'))
+column_list = [column_list[column_number]] + column_list[:column_number] + column_list[column_number+1:]
+new_Delhi_onehot = new_Delhi_onehot[column_list]
+
+new_Delhi_onehot.head()
+
+New_Delhi_grouped = new_Delhi_onehot.groupby('Locality').mean().reset_index()
+New_Delhi_grouped
+
+New_Delhi_grouped.shape
+
+## print each Locality along with the top 5 most common venues
+
+num_top_venues = 5
+
+for hood in New_Delhi_grouped['Locality']:
+    print("----"+hood+"----")
+    temp = New_Delhi_grouped[New_Delhi_grouped['Locality'] == hood].T.reset_index()
+    temp.columns = ['venue','freq']
+    temp = temp.iloc[1:]
+    temp['freq'] = temp['freq'].astype(float)
+    temp = temp.round({'freq': 2})
+    print(temp.sort_values('freq', ascending=False).reset_index(drop=True).head(num_top_venues))
+    print('\n')
+
+## put that into a pandas dataframe
+## First, write a function to sort the venues in descending order.
+
+def return_most_common_venues(row, num_top_venues):
+    row_categories = row.iloc[1:]
+    row_categories_sorted = row_categories.sort_values(ascending=False)
+    
+    return row_categories_sorted.index.values[0:num_top_venues]
+
+## create the new dataframe and display the top 10 venues for each Locality.
+
+num_top_venues = 10
+
+indicators = ['st', 'nd', 'rd']
+
+# create columns according to number of top venues
+columns = ['Locality']
+for ind in np.arange(num_top_venues):
+    try:
+        columns.append('{}{} Most Common Venue'.format(ind+1, indicators[ind]))
+    except:
+        columns.append('{}th Most Common Venue'.format(ind+1))
+
+# create a new dataframe
+Locality_venues_sorted = pd.DataFrame(columns=columns)
+Locality_venues_sorted['Locality'] = New_Delhi_grouped['Locality']
+
+for ind in np.arange(New_Delhi_grouped.shape[0]):
+    Locality_venues_sorted.iloc[ind, 1:] = return_most_common_venues(New_Delhi_grouped.iloc[ind, :], num_top_venues)
+
+Locality_venues_sorted
+
+## Cluster Locality
+## Run k-means to cluster the Locality into 5 clusters.
+
+# set number of clusters
+kclusters = 5
+
+New_Delhi_clustering = New_Delhi_grouped.drop('Locality', 1)
+
+# run k-means clustering
+kmeans = KMeans(n_clusters=kclusters, random_state=0).fit(New_Delhi_clustering)
+
+# check cluster labels generated for each row in the dataframe
+kmeans.labels_[0:10] 
+kmeans.labels_.shape
+
+# add clustering labels
+New_Delhi_merged = df_final.head(239)
+New_Delhi_merged['Cluster Labels'] = kmeans.labels_
+
+# merge New_Delhi_grouped with df_Chinese to add latitude/longitude for each Locality
+New_Delhi_merged = New_Delhi_merged.join(Locality_venues_sorted.set_index('Locality'), on='Locality')
+
+New_Delhi_merged.head()
+
+map_clusters = folium.Map(location=[latitude, longitude], zoom_start=10)
+
+# set color scheme for the clusters
+x = np.arange(kclusters)
+ys = [i+x+(i*x)**2 for i in range(kclusters)]
+#colors_array = cm.rainbow(np.linspace(0, 1, len(ys)))
+#rainbow = [colors.rgb2hex(i) for i in colors_array]
+colors = ['red', 'green', 'blue', 'yellow','orange']
+
+# add markers to the map
+markers_colors = []
+for lat, lon, poi, cluster in zip(New_Delhi_merged['Lat'], New_Delhi_merged['Lng'], New_Delhi_merged['Locality'], New_Delhi_merged['Cluster Labels']):
+    label = folium.Popup(str(poi) + ' Cluster ' + str(cluster), parse_html=True)
+    folium.CircleMarker(
+        [lat, lon],
+        radius=5,
+        popup=label,
+        color='black',
+        fill=True,
+        fill_color=colors[cluster],
+        fill_opacity=0.7).add_to(map_clusters)
+       
+map_clusters
+
+## Examine Clusters
+
+## Cluster 1
+New_Delhi_merged.loc[New_Delhi_merged['Cluster Labels'] == 0, New_Delhi_merged.columns[[1] + list(range(5, New_Delhi_merged.shape[1]))]]
+
+## Examine Clusters
+
+## Cluster 2
+New_Delhi_merged.loc[New_Delhi_merged['Cluster Labels'] == 1, New_Delhi_merged.columns[[1] + list(range(5, New_Delhi_merged.shape[1]))]]
+
+## Examine Clusters
+
+## Cluster 3
+New_Delhi_merged.loc[New_Delhi_merged['Cluster Labels'] == 2, New_Delhi_merged.columns[[1] + list(range(5, New_Delhi_merged.shape[1]))]]
+
+## Examine Clusters
+
+## Cluster 4
+New_Delhi_merged.loc[New_Delhi_merged['Cluster Labels'] ==3 , New_Delhi_merged.columns[[1] + list(range(5, New_Delhi_merged.shape[1]))]]
+
+## Examine Clusters
+
+## Cluster 5
+New_Delhi_merged.loc[New_Delhi_merged['Cluster Labels'] == 4, New_Delhi_merged.columns[[1] + list(range(5, New_Delhi_merged.shape[1]))]]
+
+
+
+Conclusion
+1. Chanakyapuri, Pitampura, Safdarjung are some of the best neighborhoods for Chinese cuisine.
+2. Pancsheel park, Nehru place have the best Chinese Resturant.
+3. Cannaught place, Rajouri garden, Malviya nagar are the best places for edible person.
+4. Greater kailash, Feroze shah road, Saket have best resturants in New Delhi. #### Cluster 1: It is most recommended for Indian Restaurants. 
+#### Cluster 2: It is most recommended for Hotels and nightclub. 
+#### Cluster 3 and Cluster 5: It is most recommended for Fast food. 
+#### Cluster 4: It is most recommended for the cafe and pizza.
+
