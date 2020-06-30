@@ -1,0 +1,7 @@
+Capstone Project — The Battle of Neighbourhoods
+Introduction New Delhi is the capital city of India. The city itself has a population of 257,803. From different parts of India many people goes to Delhi for different purposes like construction work, IT Job, Business, Travel with family,Students etc.. First thing which people encounter in which area they will stay. Now staying in an area depends on different aspects too like availability for food,most importantly if you are foodie, budget and bviously other amenities. So, we need to build this code to check which area is best for different category of people.For example, most north indian persons like chinese food so they can easily get the exact recommendation according to their need.
+
+With it’s diverse culture , comes diverse food items,ethnicity. There are many restaurants in New Delhi City, each belonging to different categories like Chinese , Italian , French etc. So as part of this project , we will list and visualise all major parts of New Delhi City .
+
+Questions that can be asked using the above mentioned datasets
+What is best location for Chinese food ? Which area is having large number of north indian foods ? Which area is not having sufficient restaurants ? Best place to stay as per chinese cuisine selection ? In New delhi what are the best restaurants?
